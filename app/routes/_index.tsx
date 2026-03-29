@@ -1,7 +1,7 @@
 import { useLoaderData, Link, useNavigation, useSearchParams } from "react-router";
 import type { MetaFunction } from "react-router";
 import { getPokemonList, getPokemonByType, getPokemon, type Pokemon, type PokemonListItem } from "~/lib/pokemon";
-import { PokemonCard } from "~/components/pokemon/PokemonCard";
+import { PokemonCard, PokemonCardSkeleton } from "~/components/pokemon/PokemonCard";
 import * as homeStyles from "~/styles/components/home.css";
 import * as uiStyles from "~/styles/components/ui.css";
 import { typeColors } from "~/styles/theme.css";
@@ -180,7 +180,7 @@ export default function Home() {
       {isLoading ? (
         <div className={uiStyles.loadingGrid} aria-busy="true" aria-label="Loading Pokemon">
           {Array.from({ length: 6 }).map((_, i) => (
-            <PokemonCard key={i} pokemon={{ name: "", url: "" }} />
+            <PokemonCardSkeleton key={i} />
           ))}
         </div>
       ) : (

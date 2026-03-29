@@ -22,11 +22,14 @@ export async function clientLoader({ params }: { params: Record<string, string |
     throw new Response("Not Found", { status: 404 });
   }
 
-  const pokemon = await getPokemon(name);
-  const species = await getPokemonSpecies(name);
-  const evolutionChain = await getEvolutionChain(species.evolution_chain.url);
-
-  return { pokemon, species, evolutionChain };
+  try {
+    const pokemon = await getPokemon(name);
+    const species = await getPokemonSpecies(name);
+    const evolutionChain = await getEvolutionChain(species.evolution_chain.url);
+    return { pokemon, species, evolutionChain };
+  } catch {
+    throw new Response(`Could not load data for "${name}". Please try again.`, { status: 500 });
+  }
 }
 
 function extractEvolutions(chain: { chain: { species: { name: string; url: string }; evolves_to: any[] } }): Array<{ name: string; id: number }> {
@@ -49,7 +52,7 @@ export default function PokemonDetail() {
   return (
     <div className={styles.pageContainer}>
       <Link to="/" className={styles.backLink}>
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         Back to Pokédex
@@ -110,7 +113,7 @@ export default function PokemonDetail() {
                   key={ability.ability.name} 
                   className={`${styles.ability} ${ability.is_hidden ? styles.hiddenAbility : ""}`}
                 >
-                  {ability.ability.name.replace("-", " ")}
+                  {ability.ability.name.replaceAll("-", " ")}
                   {ability.is_hidden && " (hidden)"}
                 </span>
               ))}
@@ -123,10 +126,10 @@ export default function PokemonDetail() {
               <div className={styles.evolutionChain}>
                 {evolutions.map((evolution, index) => (
                   <div key={evolution.name} className={styles.evolutionItem}>
-                    <Link to={`/pokemon/${evolution.name}`}>
+                    <Link to={`/pokemon/${evolution.name}`} aria-label={`View ${evolution.name} details`}>
                       <img
                         src={getPokemonImage(evolution.id)}
-                        alt={evolution.name}
+                        alt=""
                         className={styles.evolutionImage}
                       />
                     </Link>

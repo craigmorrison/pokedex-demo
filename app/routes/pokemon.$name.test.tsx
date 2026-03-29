@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import * as reactRouter from "react-router";
-import PokemonDetail from "./pokemon.$name";
+import PokemonDetail, { meta } from "./pokemon.$name";
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual("react-router");
@@ -142,5 +142,23 @@ describe("PokemonDetail", () => {
     });
     renderDetail();
     expect(screen.getByText("Unknown")).toBeInTheDocument();
+  });
+
+  it("evolution links have aria-label", () => {
+    renderDetail();
+    expect(screen.getByLabelText("View pichu details")).toBeInTheDocument();
+    expect(screen.getByLabelText("View raichu details")).toBeInTheDocument();
+  });
+});
+
+describe("meta", () => {
+  it("returns correct title for pokemon", () => {
+    const result = meta({ data: mockDetailData } as any);
+    expect(result).toContainEqual({ title: "Pikachu - Pokédex" });
+  });
+
+  it("returns not found title when no data", () => {
+    const result = meta({ data: undefined } as any);
+    expect(result).toContainEqual({ title: "Pokemon Not Found" });
   });
 });

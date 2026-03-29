@@ -153,8 +153,3 @@ export const evolutionName = style({
   textTransform: "capitalize",
   color: "#0f172a",
 });
-
-export const evolutionArrow = style({
-  color: "#94a3b8",
-  fontSize: "1.25rem",
-});

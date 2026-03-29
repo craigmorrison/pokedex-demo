@@ -1,9 +1,8 @@
 import { Link } from "react-router";
-import type { PokemonListItem, Pokemon } from "~/lib/pokemon";
+import type { PokemonListItem } from "~/lib/pokemon";
 import { getPokemonId, getPokemonImage } from "~/lib/pokemon";
 import * as styles from "~/styles/components/card.css";
 import * as uiStyles from "~/styles/components/ui.css";
-import { typeColors } from "~/styles/theme.css";
 
 interface PokemonCardProps {
   pokemon: PokemonListItem;

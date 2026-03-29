@@ -1,5 +1,6 @@
 const cache = new Map<string, { data: unknown; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour — Pokemon data is immutable
+const CACHE_MAX_SIZE = 500;
 
 function getCached<T>(key: string): T | null {
   const cached = cache.get(key);
@@ -11,6 +12,10 @@ function getCached<T>(key: string): T | null {
 }
 
 function setCached<T>(key: string, data: T): void {
+  if (cache.size >= CACHE_MAX_SIZE) {
+    const oldestKey = cache.keys().next().value!;
+    cache.delete(oldestKey);
+  }
   cache.set(key, { data, timestamp: Date.now() });
 }
 

@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useLoaderData, Link, useNavigation } from "react-router";
+import { useLoaderData, Link, useNavigation, useSearchParams } from "react-router";
 import type { MetaFunction } from "react-router";
 import { getPokemonList, getPokemonByType, getPokemon, type Pokemon, type PokemonListItem } from "~/lib/pokemon";
 import { PokemonCard } from "~/components/pokemon/PokemonCard";
@@ -14,62 +13,71 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+const PAGE_LIMIT = 20;
+
 export async function clientLoader({ request }: { request: Request }) {
   const url = new URL(request.url);
-  const offset = parseInt(url.searchParams.get("offset") || "0", 10);
-  const limit = 20;
+  const rawOffset = parseInt(url.searchParams.get("offset") || "0", 10);
+  const offset = Number.isNaN(rawOffset) ? 0 : Math.max(0, rawOffset);
   const search = url.searchParams.get("q") || "";
   const type = url.searchParams.get("type") || "";
-  
-  let filtered: PokemonListItem[];
-  
-  if (type) {
-    // Use PokeAPI's type endpoint - much faster
-    filtered = await getPokemonByType(type);
-  } else if (search) {
-    // For search, get all names and filter
-    const allData = await getPokemonList(0, 2000);
-    filtered = allData.results.filter((p: PokemonListItem) => 
-      p.name.toLowerCase().includes(search.toLowerCase())
-    );
-  } else {
-    // No filter - just get paginated list
-    const listData = await getPokemonList(offset, limit);
+
+  try {
+    let filtered: PokemonListItem[];
+
+    if (type) {
+      filtered = await getPokemonByType(type);
+    } else if (search) {
+      const allData = await getPokemonList(0, 2000);
+      filtered = allData.results.filter((p: PokemonListItem) =>
+        p.name.toLowerCase().includes(search.toLowerCase())
+      );
+    } else {
+      const listData = await getPokemonList(offset, PAGE_LIMIT);
+      const pokemonData = await Promise.all(
+        listData.results.map(async (p: PokemonListItem) => {
+          try {
+            const details = await getPokemon(p.name);
+            return { ...details, name: p.name };
+          } catch {
+            return { id: 0, name: p.name, types: [], abilities: [], stats: [], height: 0, weight: 0, sprites: {} as any, species: { name: p.name, url: p.url } };
+          }
+        })
+      );
+      return {
+        pokemon: pokemonData,
+        count: listData.count,
+        nextOffset: listData.next ? offset + PAGE_LIMIT : null,
+        prevOffset: offset > 0 ? Math.max(0, offset - PAGE_LIMIT) : null,
+        currentOffset: offset,
+        search: "",
+        type: "",
+      };
+    }
+
+    const paginatedNames = filtered.slice(offset, offset + PAGE_LIMIT);
     const pokemonData = await Promise.all(
-      listData.results.map(async (p: PokemonListItem) => {
-        const details = await getPokemon(p.name);
-        return { name: p.name, url: p.url, ...details } as PokemonListItem & Pokemon;
+      paginatedNames.map(async (p: PokemonListItem) => {
+        try {
+          return await getPokemon(p.name);
+        } catch {
+          return { id: 0, name: p.name, types: [], abilities: [], stats: [], height: 0, weight: 0, sprites: {} as any, species: { name: p.name, url: "" } };
+        }
       })
     );
+
     return {
       pokemon: pokemonData,
-      count: listData.count,
-      nextOffset: listData.next ? offset + limit : null,
-      prevOffset: offset > 0 ? Math.max(0, offset - limit) : null,
+      count: filtered.length,
+      nextOffset: offset + PAGE_LIMIT < filtered.length ? offset + PAGE_LIMIT : null,
+      prevOffset: offset > 0 ? Math.max(0, offset - PAGE_LIMIT) : null,
       currentOffset: offset,
-      search: "",
-      type: "",
+      search,
+      type,
     };
+  } catch {
+    throw new Response("Failed to load Pokemon data. Please try again.", { status: 500 });
   }
-  
-  // Get details for paginated results
-  const paginatedNames = filtered.slice(offset, offset + limit);
-  const pokemonData = await Promise.all(
-    paginatedNames.map(async (p: PokemonListItem) => {
-      const details = await getPokemon(p.name);
-      return details;
-    })
-  );
-
-  return {
-    pokemon: pokemonData,
-    count: filtered.length,
-    nextOffset: offset + limit < filtered.length ? offset + limit : null,
-    prevOffset: offset > 0 ? Math.max(0, offset - limit) : null,
-    currentOffset: offset,
-    search,
-    type,
-  };
 }
 
 const TYPE_FILTERS = [
@@ -81,32 +89,36 @@ const TYPE_FILTERS = [
 export default function Home() {
   const { pokemon, count, nextOffset, prevOffset, currentOffset, search, type } = useLoaderData<typeof clientLoader>();
   const navigation = useNavigation();
-  const [searchInput, setSearchInput] = useState(search);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const isLoading = navigation.state === "loading";
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams(window.location.search);
-    if (searchInput) {
-      params.set("q", searchInput);
-    } else {
-      params.delete("q");
-    }
-    params.delete("offset");
-    window.location.search = params.toString();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const q = (formData.get("q") as string) || "";
+    setSearchParams((prev) => {
+      if (q) {
+        prev.set("q", q);
+      } else {
+        prev.delete("q");
+      }
+      prev.delete("offset");
+      return prev;
+    });
   };
 
   const handleTypeClick = (typeName: string) => {
-    const params = new URLSearchParams(window.location.search);
-    if (typeName && typeName !== type) {
-      params.set("type", typeName);
-    } else {
-      params.delete("type");
-    }
-    params.delete("offset");
-    params.delete("q"); // Clear search when changing type
-    window.location.search = params.toString();
+    setSearchParams((prev) => {
+      if (typeName && typeName !== type) {
+        prev.set("type", typeName);
+      } else {
+        prev.delete("type");
+      }
+      prev.delete("offset");
+      prev.delete("q");
+      return prev;
+    });
   };
 
   return (
@@ -118,6 +130,7 @@ export default function Home() {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -128,10 +141,10 @@ export default function Home() {
           </svg>
           <input
             type="text"
+            name="q"
             placeholder="Search Pokemon..."
             className={homeStyles.searchInput}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            defaultValue={search}
           />
         </form>
 
@@ -141,6 +154,7 @@ export default function Home() {
             <button
               className={homeStyles.typeButton}
               style={{ backgroundColor: !type ? "#dc2626" : "#64748b" }}
+              aria-pressed={!type}
               onClick={() => handleTypeClick("")}
             >
               All
@@ -149,10 +163,11 @@ export default function Home() {
               <button
                 key={typeName}
                 className={`${homeStyles.typeButton} ${type === typeName ? homeStyles.typeButtonActive : ""}`}
-                style={{ 
+                style={{
                   backgroundColor: typeColors[typeName],
                   opacity: type === typeName ? 1 : 0.7,
                 }}
+                aria-pressed={type === typeName}
                 onClick={() => handleTypeClick(typeName)}
               >
                 {typeName}
@@ -163,7 +178,7 @@ export default function Home() {
       </div>
 
       {isLoading ? (
-        <div className={uiStyles.loadingGrid}>
+        <div className={uiStyles.loadingGrid} aria-busy="true" aria-label="Loading Pokemon">
           {Array.from({ length: 6 }).map((_, i) => (
             <PokemonCard key={i} pokemon={{ name: "", url: "" }} />
           ))}

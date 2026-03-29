@@ -5,12 +5,15 @@ import { MemoryRouter } from "react-router";
 import * as reactRouter from "react-router";
 import Home from "./_index";
 
+const mockSetSearchParams = vi.fn();
+
 vi.mock("react-router", async () => {
   const actual = await vi.importActual("react-router");
   return {
     ...actual,
     useLoaderData: vi.fn(),
     useNavigation: vi.fn(),
+    useSearchParams: () => [new URLSearchParams(), mockSetSearchParams],
   };
 });
 
@@ -161,5 +164,46 @@ describe("Home", () => {
     renderHome();
     const fireButton = screen.getByText("fire");
     expect(fireButton).toHaveStyle({ opacity: "1" });
+  });
+
+  it("calls setSearchParams on type filter click", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(screen.getByText("fire"));
+    expect(mockSetSearchParams).toHaveBeenCalled();
+  });
+
+  it("calls setSearchParams on search submit", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    const input = screen.getByPlaceholderText("Search Pokemon...");
+    await user.type(input, "pika{enter}");
+    expect(mockSetSearchParams).toHaveBeenCalled();
+  });
+
+  it("type filter buttons have aria-pressed", () => {
+    vi.mocked(reactRouter.useLoaderData).mockReturnValue({
+      ...mockData,
+      type: "water",
+    });
+    renderHome();
+    expect(screen.getByText("water")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("fire")).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("All")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("loading grid has aria-busy", () => {
+    vi.mocked(reactRouter.useNavigation).mockReturnValue({
+      state: "loading",
+      location: undefined,
+      formMethod: undefined,
+      formAction: undefined,
+      formEncType: undefined,
+      formData: undefined,
+      json: undefined,
+      text: undefined,
+    } as any);
+    renderHome();
+    expect(screen.getByLabelText("Loading Pokemon")).toHaveAttribute("aria-busy", "true");
   });
 });

@@ -1,0 +1,85 @@
+import { createGlobalTheme } from "@vanilla-extract/css";
+
+export const vars = createGlobalTheme(":root", {
+  color: {
+    background: "#f8fafc",
+    foreground: "#0f172a",
+    card: "#ffffff",
+    cardHover: "#f1f5f9",
+    border: "#e2e8f0",
+    text: {
+      primary: "#0f172a",
+      secondary: "#64748b",
+      muted: "#94a3b8",
+    },
+    primary: "#dc2626",
+    primaryHover: "#b91c1c",
+    accent: "#fbbf24",
+  },
+  space: {
+    xs: "0.25rem",
+    sm: "0.5rem",
+    md: "1rem",
+    lg: "1.5rem",
+    xl: "2rem",
+    xxl: "3rem",
+  },
+  font: {
+    body: "'Outfit', sans-serif",
+    heading: "'Outfit', sans-serif",
+  },
+  fontSize: {
+    xs: "0.75rem",
+    sm: "0.875rem",
+    base: "1rem",
+    lg: "1.125rem",
+    xl: "1.25rem",
+    "2xl": "1.5rem",
+    "3xl": "1.875rem",
+    "4xl": "2.25rem",
+  },
+  fontWeight: {
+    normal: "400",
+    medium: "500",
+    semibold: "600",
+    bold: "700",
+  },
+  radius: {
+    sm: "0.375rem",
+    md: "0.5rem",
+    lg: "0.75rem",
+    xl: "1rem",
+    full: "9999px",
+  },
+  shadow: {
+    sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    md: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+    lg: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+  },
+  transition: {
+    fast: "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+    normal: "200ms cubic-bezier(0.4, 0, 0.2, 1)",
+    slow: "300ms cubic-bezier(0.4, 0, 0.2, 1)",
+  },
+});
+
+export const typeColors: Record<string, string> = {
+  normal: "#A8A77A",
+  fire: "#EE8130",
+  water: "#6390F0",
+  electric: "#F7D02C",
+  grass: "#7AC74C",
+  ice: "#96D9D6",
+  fighting: "#C22E28",
+  poison: "#A33EA1",
+  ground: "#E2BF65",
+  flying: "#A98FF3",
+  psychic: "#F95587",
+  bug: "#A6B91A",
+  rock: "#B6A136",
+  ghost: "#735797",
+  dragon: "#6F35FC",
+  dark: "#705746",
+  steel: "#B7B7CE",
+  fairy: "#D685AD",
+};
